@@ -2,45 +2,56 @@
 
 import { useEffect, useState } from "react";
 import 'animate.css';
-import bientot from "@/public/images/bientot.png"
 import { NewsLetter } from "@/components/newsletter";
 import { TQuestionnaireData } from "@/types/test.types";
 import { dataMock } from "@/mocks/test.mock";
 import { Loader } from "@/components/loader";
 import { ProgressBar } from "@/components/progressBar";
+import { ApiChatgptTestResult } from "./test.types";
 
 export default function Test() {
 
     const [questions] = useState<TQuestionnaireData[]>(dataMock)
 
-    const [responses, setResponses] = useState<{question: number, answer: number}[]>([])
+    const [responses, setResponses] = useState<string[]>([])
 
     const [index, setIndex] = useState<number>(0)
 
     const [isLoading, setIsLoading] = useState<boolean>(false)
 
-    const handleResponse = (question: any, answer: any) => {
-        setResponses((prevState) => {
-            const futurResponses = [...prevState, {question : question.id, answer : answer.id}]
-            if(futurResponses.length === questions.length)
-                setIsLoading(true);
-            return futurResponses
-        })
+    const [chatApiResponse, setChatApiResponse] = useState<ApiChatgptTestResult[] | null>(null)
+
+    const handleResponse = (userRep: string) => {
+        setResponses((prevState) => [...prevState, userRep])
         setIndex(index + 1) 
     }
 
-    const handlePrevButtonClick = () => {
-        setResponses(prevState => prevState.filter(response => response.question !== prevState[prevState.length - 1].question))
-        setIndex(index - 1)
-    }
+    useEffect(() => {
+        if(responses.length === questions.length){
+            setIsLoading(true);
+            const testResultCall = async () =>{
+                const payload = { responses }
+                const res = await fetch('/api/test', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                }) 
+                setChatApiResponse(await res.json())
+            }
+            testResultCall()
+        }
+    }, [responses])
 
     useEffect(() => {
-        if(isLoading){
-            setTimeout(() => {
-                setIsLoading(false)
-            }, 2000)
-        }
-    }, [isLoading])
+        setIsLoading(false)
+        console.log({
+            chatApiResponse
+        })
+    }, [chatApiResponse])
+
+    const handlePrevButtonClick = () => {
+        setResponses(prevState => prevState.filter(responses => responses !== prevState[prevState.length - 1]))
+        setIndex(index - 1)
+    }
 
     return (
         <>
@@ -63,12 +74,12 @@ export default function Test() {
                             </div>
                         </div>
                         <div className="w-full flex justify-evenly items-center">
-                            <div onClick={() => handleResponse(questions[index].question, questions[index].answer.oneHand)} style={{animationDelay: "250ms"}}  className="group hover:bg-oukonva-orange duration-150 bg-oukonva-bleu-clair flex flex-col items-center w-1/3 rounded-3xl py-11  cursor-pointer animate__animated animate__fadeIn">
+                            <div onClick={() => handleResponse(questions[index].answer.oneHand.content)} style={{animationDelay: "250ms"}}  className="group hover:bg-oukonva-orange duration-150 bg-oukonva-bleu-clair flex flex-col items-center w-1/3 rounded-3xl py-11  cursor-pointer animate__animated animate__fadeIn">
                                 <p className="group-hover:text-white duration-150 text-center uppercase">{questions[index].answer.oneHand.content}</p>
                                 <div className="group-hover:bg-white duration-150 w-16 h-16 mt-5 bg-[#023047]" style={{maskImage: `url(${questions[index].answer.oneHand.image})`, WebkitMaskImage: `url(${questions[index].answer.oneHand.image})`, WebkitMaskPosition: 'center', maskPosition: 'center', WebkitMaskSize: 'contain', maskSize: 'contain'}} />
                             </div>
                             <p style={{animationDelay: "500ms"}}  className="uppercase font-semibold text-5xl  animate__animated animate__fadeIn">ou</p>
-                            <div onClick={() => handleResponse(questions[index].question, questions[index].answer.otherHand)} style={{animationDelay: "750ms"}} className="group hover:bg-oukonva-bleu-clair duration-150 bg-oukonva-orange flex flex-col items-center w-1/3 rounded-3xl py-11 cursor-pointer animate__animated animate__fadeIn">
+                            <div onClick={() => handleResponse(questions[index].answer.otherHand.content)} style={{animationDelay: "750ms"}} className="group hover:bg-oukonva-bleu-clair duration-150 bg-oukonva-orange flex flex-col items-center w-1/3 rounded-3xl py-11 cursor-pointer animate__animated animate__fadeIn">
                                 <p className=" group-hover:text-black duration-150 text-white text-center uppercase">{questions[index].answer.otherHand.content}</p>
                                 <div className="group-hover:bg-[#023047] duration-150 w-16 h-16 mt-5 bg-white" style={{maskImage: `url(${questions[index].answer.otherHand.image})`, WebkitMaskImage: `url(${questions[index].answer.otherHand.image})`, WebkitMaskPosition: 'center', maskPosition: 'center', WebkitMaskSize: 'contain', maskSize: 'contain'}} />
                             </div>
@@ -78,19 +89,30 @@ export default function Test() {
                 ) 
             }
             { 
-                responses.length === questions.length && !isLoading && (
+                !isLoading && chatApiResponse && (
                     <div className="flex flex-col items-center justify-center">
-                        <img src={bientot.src} alt="" className=" max-w-xs md:max-w-md" />
-                        <div className="font-bold text-center text-lg md:text-2xl">
-                            <h1>Hâte de découvrir ta prochaine destination ?</h1>
-                            <p>Abonne-toi à notre newsletter pour ne pas rater le décollage</p>
-                        </div>
-                        <div>
-                        <form className="flex flex-row justify-center mt-[5%]" id="newsletter-form" method="POST" action="https://7975d9cf.sibforms.com/serve/MUIEAKk24KQmNAdu7N02SWTginbOpkCQoZbRzed0ylbdZ9pkZZ65Cah6oqpY-Gkf23JN1z7xq2D6Ika0X-NAyYfftcFtkDmyZ970V7DhsiQIyVip8BMt1WCMa0V9ON3AU3O_kOK_l7-YfMQhEobKicg5oLM9SLDzH250xcqHDUi3-Bf-Pq43aA3p7eTNEovjaLML7IiqAJhEYgwa" data-type="subscription">
-                            <input type="email" id="EMAIL" name="EMAIL" placeholder="adresse mail" className="lg:w-[600px] w-2/6 pl-1" />
-                            <button className="bg-oukonva-bleu-clair px-3 lg:p-6 text-xs sm:text-base font-semibold">ME TENIR AU COURANT</button>
-                        </form>
-                        </div>
+                        <ul>
+                        {chatApiResponse.map((destination, index) => {
+                            return (
+                                <li key={`${destination}${index}`}>
+                                    <p>Pays: {destination.country}</p>
+                                    <p>Descriptions: {destination.description}</p>
+                                    <p>Points d'intérets</p>
+                                    <ul>
+                                    {destination.points_of_interest.map(POI => {
+                                        return (
+                                            <li key={POI.name}>
+                                                <p>Nom: {POI.name}</p>
+                                                <p>Ville: {POI.city}</p>
+                                                <p>Description: {POI.description}</p>
+                                            </li>
+                                        )
+                                    })}
+                                    </ul>
+                                </li>
+                            )
+                        })}
+                        </ul>
                     </div>
                 ) 
             }

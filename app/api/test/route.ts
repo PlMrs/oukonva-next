@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server"
-import { openAI } from "../config/openai";
+import { travelsPrompt } from "../constants/prompts.constants";
+import { TestManager } from "./test.manager";
+import { testRequestBody } from "./test.types";
+
+const testManager = new TestManager();
 
 export async function POST(request: Request) {
 
-     const body = await request.json();
+     const { responses } = await request.json() as testRequestBody
+     if(!responses) return NextResponse.json({ error: "missing responses in body" }, { status: 400 });
+     if(!Array.isArray(responses) || !responses.length) return NextResponse.json({ error: "responses need to be array of strings" }, { status: 400 });
 
-     const chatCompletion = await openAI.chat.completions.create({
-        messages: [{ role: 'user', content: 'Say this is a test' }],
-        model: 'gpt-3.5-turbo',
-      });
+     const result = await testManager.getTestResultMock(responses.join())
 
-     return NextResponse.json(chatCompletion);
+     return NextResponse.json(result)
 }
