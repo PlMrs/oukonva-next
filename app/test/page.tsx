@@ -36,7 +36,7 @@ export default function Test() {
                     body: JSON.stringify(payload)
                 }) 
                 setChatApiResponse(await res.json())
-            }
+            } 
             testResultCall()
         }
     }, [responses])
