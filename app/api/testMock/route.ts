@@ -11,7 +11,7 @@ export async function POST(request: Request) {
      if(!responses) return NextResponse.json({ error: "missing responses in body" }, { status: 400 });
      if(!Array.isArray(responses) || !responses.length) return NextResponse.json({ error: "responses need to be array of strings" }, { status: 400 });
 
-     const result = await testManager.getTestResult(responses.join())
+     const result = await testManager.getTestResultMock(responses.join())
 
      return NextResponse.json(result)
 }

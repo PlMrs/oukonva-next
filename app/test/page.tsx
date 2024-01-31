@@ -31,7 +31,7 @@ export default function Test() {
             setIsLoading(true);
             const testResultCall = async () =>{
                 const payload = { responses }
-                const res = await fetch('/api/test', {
+                const res = await fetch('/api/testMock', {
                     method: 'POST',
                     body: JSON.stringify(payload)
                 }) 
